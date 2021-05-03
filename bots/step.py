@@ -7,14 +7,17 @@ from .base import BaseBot
 
 class StepBot(BaseBot):
 
-    def execute(self, should_execute: bool) -> None:
+    def execute(self, params: dict) -> None:
+        if params.get("get_lending_status"):
+            self.response_log = list()
+
         account_balance = self.get_account_balance()
         total_balance = account_balance["Balance"]
         available_balance = account_balance["Available"]
 
         if total_balance <= 0:
             self.log("TotalBalance=[0]")
-            return
+            return self.response_log
 
         my_active_open_orders = self.get_my_active_open_orders()
         my_order_interest_daily_rate = None
@@ -45,14 +48,14 @@ class StepBot(BaseBot):
         my_optimal_rate = self.calculate_my_optimal_daily_interest_rate(market_data, my_active_open_orders, min_daily_interest_rate)
         self.log(f"LowestRate=[{market_data['LowestRate']}%] BigPlayerRate=[{market_data['BigPlayerRate']}%] MyOptimalRate=[{my_optimal_rate}%]")
 
-        if not should_execute:
-            return
+        if not params.get("should_execute"):
+            return self.response_log
 
         canceled_size = Decimal(0)
 
         if len(my_active_open_orders) > 1:
             self.log(f"Keep my open orders")
-            return
+            return self.response_log
         elif len(my_active_open_orders) == 1:
             my_active_open_order = my_active_open_orders[0]
             my_daily_interest_rate = my_active_open_order["DailyInterestRate"]
@@ -64,18 +67,18 @@ class StepBot(BaseBot):
                     self.log(f"Canceled open order: DailyInterestRate=[{my_daily_interest_rate}%] CanceledSize=[{canceled_size}] NewAvailableBalance=[{available_balance}]")
                 except Exception as ex:
                     self.log(f"Failed to cancel lend order: Error:[{repr(ex)}]")
-                    return
+                    return self.response_log
             else:
                 effective_daily_interest_rate = self.calculate_effective_daily_interest_rate(my_daily_interest_rate)
                 effective_yeary_interest_rate = effective_daily_interest_rate * 365
                 self.log(f"Keep my open order: DailyInterestRate=[{my_daily_interest_rate}%] EffectiveDailyInterestRate=[{utils.round_down_to_decimal_places_string(effective_daily_interest_rate, 3)}%] EffectiveYearlyInterestRate=[{utils.round_down_to_decimal_places_string(effective_yeary_interest_rate, 3)}%]")
-                return
+                return self.response_log
 
         lending_size = self.calculate_lending_size(total_balance, available_balance)
 
         if lending_size == Decimal(0):
             self.log("Not enough available balance")
-            return
+            return self.response_log
 
         if (available_balance - canceled_size) < lending_size:
             # Wait for canceled size to be released
@@ -90,7 +93,7 @@ class StepBot(BaseBot):
 
         self.create_lend_order(my_optimal_rate, lending_size, term)
 
-        return
+        return self.response_log
 
 
     def get_market_data(self, my_active_open_orders: list, min_daily_interest_rate: Decimal) -> dict:
