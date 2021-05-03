@@ -11,7 +11,12 @@ class StepBot(BaseBot):
         if params.get("get_lending_status"):
             self.response_log = list()
 
-        account_balance = self.get_account_balance()
+        try:
+            account_balance = self.get_account_balance()
+        except Exception as ex:
+            self.log(f"[Exception] get_account_balance(): [{repr(ex)}]")
+            return self.response_log
+
         total_balance = account_balance["Balance"]
         available_balance = account_balance["Available"]
 
@@ -19,7 +24,12 @@ class StepBot(BaseBot):
             self.log("TotalBalance=[0]")
             return self.response_log
 
-        my_active_open_orders = self.get_my_active_open_orders()
+        try:
+            my_active_open_orders = self.get_my_active_open_orders()
+        except Exception as ex:
+            self.log(f"[Exception] get_my_active_open_orders(): [{repr(ex)}]")
+            return self.response_log
+
         my_order_interest_daily_rate = None
         pending_balance = Decimal(0)
 
@@ -44,7 +54,14 @@ class StepBot(BaseBot):
         self.log(f"Expected HourlyInterest=[{utils.round_down_to_decimal_places_string(expected_hourly_usdt, self.config.currency_earning_report_decimal_places)}] DailyInterest=[{utils.round_down_to_decimal_places_string(expected_daily_usdt, self.config.currency_earning_report_decimal_places)}]")
 
         min_daily_interest_rate = self.calculate_minimum_daily_interest_rate(balance_utilization_rate)
-        market_data = self.get_market_data(my_active_open_orders, min_daily_interest_rate)
+
+        try:
+            market_data = self.get_market_data(my_active_open_orders, min_daily_interest_rate)
+        except Exception as ex:
+            self.log(f"[Exception] get_market_data(): [{repr(ex)}]")
+            return self.response_log
+
+
         my_optimal_rate = self.calculate_my_optimal_daily_interest_rate(market_data, my_active_open_orders, min_daily_interest_rate)
         self.log(f"LowestRate=[{market_data['LowestRate']}%] BigPlayerRate=[{market_data['BigPlayerRate']}%] MyOptimalRate=[{my_optimal_rate}%]")
 
@@ -91,7 +108,11 @@ class StepBot(BaseBot):
         else:
             term = 7
 
-        self.create_lend_order(my_optimal_rate, lending_size, term)
+        try:
+            self.create_lend_order(my_optimal_rate, lending_size, term)
+        except Exception as ex:
+            self.log(f"[Exception] Failed to create lend order: [{repr(ex)}]")
+            return self.response_log
 
         return self.response_log
 
