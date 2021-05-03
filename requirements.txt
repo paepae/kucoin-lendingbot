@@ -1,0 +1,4 @@
+Flask == 1.0.2
+google-cloud-firestore
+kucoin-python == 1.0.6
+pytz
