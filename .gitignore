@@ -186,6 +186,5 @@ cython_debug/
 # ===== Custom =====
 
 gcloud_user.json
-configure_env.sh
 env.yaml
 gcloud_env.sh

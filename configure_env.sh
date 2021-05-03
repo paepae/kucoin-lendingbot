@@ -1,0 +1,1 @@
+export GOOGLE_APPLICATION_CREDENTIALS=gcloud_user.json
