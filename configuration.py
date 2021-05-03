@@ -97,7 +97,7 @@ class AccountConfiguration:
         self.reserved_balance = Decimal(data["reserved_balance"])
 
         step_bot_doc = accounts_ref.document(doc.id).collection(u"bots").document(u"step").get()
-        self.step_bot = PistolBotConfiguration(self.name, step_bot_doc)
+        self.step_bot = StepBotConfiguration(self.name, step_bot_doc)
 
 
 class Configuration:
